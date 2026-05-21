@@ -11,7 +11,7 @@ export const createTeacher = async (data: any) => {
 
     // 1. teacher create
     const [teacherResult] = (await connection.execute(
-      "INSERT INTO teachers (name, email, phone, age) VALUES (?, ?)",
+      "INSERT INTO teachers (name, email, phone, age) VALUES (?, ?, ?, ?)",
       [name, email, phone, age],
     )) as any;
 

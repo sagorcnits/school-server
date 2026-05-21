@@ -24,9 +24,39 @@ const getTeacherController = async (req: any, res: any) => {
 const getTeacherByIdController = async (req: any, res: any) => {
   try {
     const { id } = req.params;
-    const sql = `SELECT * FROM teachers WHERE id = ?`;
-    const [result] = await db.query(sql, id);
-    sendResponse(res, 200, "Teacher retrieved successfully", result);
+    const sql = `
+SELECT 
+  t.id,
+  t.name AS teacher_name,
+  t.phone,
+  t.email,
+  t.age,
+  GROUP_CONCAT(s.name) AS subjects
+FROM teachers t
+JOIN teachers_subjects ts
+  ON t.id = ts.teacher_id
+JOIN subjects s
+  ON ts.subject_id = s.id
+WHERE t.id = ?
+GROUP BY t.id, t.name, t.phone, t.email, t.age;
+    
+    
+    `;
+
+    const [rows] = await db.query(sql, [id]);
+    const result =
+      Array.isArray(rows) && rows.length > 0 ? (rows[0] as any) : null;
+
+    if (!result) {
+      sendResponse(res, 404, "Teacher not found", null);
+      return;
+    }
+
+    const formatted = {
+      ...result,
+      subjects: result.subjects ? (result.subjects as string).split(",") : [],
+    };
+    sendResponse(res, 200, "Teacher retrieved successfully", formatted);
   } catch (error) {
     sendResponse(res, 500, "Failed to retrieve teacher", null);
   }
