@@ -1,6 +1,9 @@
 import db from "../config/database";
 import { createTeacher } from "../models/teacher.model";
 import { sendResponse } from "../utils/sendResponse";
+
+import { Request, Response } from "express";
+
 const createTeacherController = async (req: any, res: any) => {
   try {
     const teacher = req.body;
@@ -11,12 +14,40 @@ const createTeacherController = async (req: any, res: any) => {
   }
 };
 
-const getTeacherController = async (req: any, res: any) => {
+const getTeacherController = async (req: Request, res: Response) => {
   try {
-    const sql = `SELECT * FROM teachers`;
-    const [result] = await db.query(sql);
+    const search = req.query.search || "";
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const offset = (page - 1) * limit;
+
+    let sql = `
+      SELECT t.id, t.name as teacher_name, t.phone, t.email, t.age, group_concat(s.name) as subject_name FROM teachers as t
+
+       LEFT JOIN teachers_subjects ts
+        ON t.id = ts.teacher_id
+
+      LEFT JOIN subjects as s
+        ON ts.subject_id = s.id
+    `;
+
+    const values = [];
+
+    if (search) {
+      sql += ` WHERE name LIKE ? OR email LIKE ? `;
+      values.push(`%${search}%`, `%${search}%`);
+    }
+
+    sql += `group by t.id order by t.name asc limit ? offset ?`;
+
+    values.push(limit, offset);
+
+    const [result] = await db.query(sql, values);
+
     sendResponse(res, 200, "Teachers retrieved successfully", result);
   } catch (error) {
+    console.log(error);
     sendResponse(res, 500, "Failed to retrieve teachers", null);
   }
 };
@@ -44,6 +75,7 @@ GROUP BY t.id, t.name, t.phone, t.email, t.age;
     `;
 
     const [rows] = await db.query(sql, [id]);
+
     const result =
       Array.isArray(rows) && rows.length > 0 ? (rows[0] as any) : null;
 

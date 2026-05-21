@@ -30,8 +30,24 @@ const getStudentController = async (
   res: Response,
 ): Promise<any> => {
   try {
-    const sql = `SELECT * FROM students`;
-    const [result] = await db.query(sql);
+    const search = req.query.search || "";
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const offset = (page - 1) * limit;
+
+    let sql = `SELECT * FROM students`;
+    let values = [];
+
+    if (search) {
+      sql += ` where name like ? or email like ? or phone like ?`;
+      values.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    sql += ` group by id order by name asc limit ? offset ?`;
+    values.push(limit, offset);
+
+    const [result] = await db.query(sql, values);
     sendResponse(res, 200, "Students retrieved successfully", result);
   } catch (error) {
     console.log(error);
@@ -46,8 +62,9 @@ const getStudentByIdController = async (
   try {
     const { id } = req.params;
     const sql = `SELECT * FROM students WHERE id = ?`;
-    const [result] = await db.query(sql, id);
-    sendResponse(res, 200, "Student retrieved successfully", result);
+    const [result]: any = await db.query(sql, [id]);
+
+    sendResponse(res, 200, "Student retrieved successfully", result[0]);
   } catch (error) {
     console.log(error);
     sendResponse(res, 500, "Failed to retrieve student", null);
