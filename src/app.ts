@@ -5,7 +5,8 @@ import helmet from "helmet";
 
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import studentRoutes from "./routes/student.routes";
-
+import subjectRoutes from "./routes/subject.routes";
+import teacherRoutes from "./routes/techer.routes";
 dotenv.config();
 
 const app = express();
@@ -19,6 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 // routes
 
 app.use("/api/v1", studentRoutes);
+app.use("/api/v1", subjectRoutes);
+app.use("/api/v1", teacherRoutes);
 
 app.get("/", (req, res) => {
   res.send("Server Running");
